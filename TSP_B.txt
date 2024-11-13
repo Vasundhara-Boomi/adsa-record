@@ -1,0 +1,87 @@
+import numpy as np
+import sys
+
+def tsp_branch_and_bound(graph):
+    n = len(graph)
+
+    # Helper function to calculate the lower bound of a node
+    def lower_bound(path):
+        lb = 0
+        visited = [False] * n
+
+        # Calculate the lower bound based on the current path
+        for i in range(len(path) - 1):
+            u, v = path[i], path[i + 1]
+            lb += graph[u][v]
+
+            # Mark visited vertices
+            visited[u] = True
+            visited[v] = True
+
+        # Find the minimum outgoing edge from the visited vertices
+        for u in range(n):
+            if not visited[u]:
+                min_edge = sys.maxsize
+                for v in range(n):
+                    if u != v and not visited[v]:
+                        min_edge = min(min_edge, graph[u][v])
+                lb += min_edge
+
+        return lb
+
+    # Branch and Bound function
+    def branch_and_bound(path, bound, min_cost, final_path):
+        nonlocal count
+
+        count += 1
+
+        # Base case: If all vertices have been visited
+        if len(path) == n:
+            cost = bound + graph[path[-1]][path[0]]
+            if cost < min_cost:
+                min_cost = cost
+                final_path[:] = path[:] + [path[0]]
+            return min_cost
+
+        for v in range(n):
+            # Check if the vertex is not visited and has a lower bound less than min_cost
+            if v not in path:
+                new_path = path[:] + [v]
+                new_bound = bound + graph[path[-1]][v]
+
+                if new_bound < min_cost:
+                    min_cost = branch_and_bound(new_path, lower_bound(new_path), min_cost, final_path)
+
+        return min_cost
+
+    # Initialize variables
+    count = 0
+    initial_path = [0]  # Start from vertex 0
+    initial_bound = lower_bound(initial_path)
+    min_cost = sys.maxsize
+    final_path = []
+
+    # Run the Branch and Bound algorithm
+    min_cost = branch_and_bound(initial_path, initial_bound, min_cost, final_path)
+
+    return min_cost, final_path
+
+# User input
+n = int(input("Enter the number of cities: "))
+graph = np.zeros((n, n))
+
+# Get the distances between cities from the user
+print("Enter the distances between the cities:")
+for i in range(n):
+    for j in range(n):
+        if i != j:
+            distance = float(input(f"Distance between city {i} and city {j}: "))
+            graph[i][j] = distance
+
+# Solve the TSP using Branch and Bound
+min_cost, optimal_path = tsp_branch_and_bound(graph)
+
+# Print the result
+print("Optimal Solution:")
+print("Minimum Cost:", min_cost)
+print("Optimal Path:", optimal_path)
